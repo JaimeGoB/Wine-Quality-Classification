@@ -2,6 +2,7 @@ library(class)
 library(cvAUC)
 library(pROC)
 library(MASS)
+library(caret)
 ################################################
 # 3.  Dichotomize the quality variable as good, which takes the value 1 if quality ≥ 7 and the value 0, otherwise. 
 # We will take good as response and all the 11 physiochemical characteristics of the wines in the data as predictors.
@@ -11,13 +12,14 @@ library(MASS)
 
 #reading in dataset
 wine <- read.csv("winequality-white.csv", header = T, sep = ";")
-
-
 wine$quality <- ifelse(wine$quality >= 7, 1, 0)
-# #wine$quality = as.factor(wine$quality)
 names(wine)[12] <- "good"
-# str(wine)
 
+wine2 <- read.csv("winequality-white.csv", header = T, sep = ";")
+wine2$quality <- ifelse(wine2$quality >= 7, 1, 0)
+wine2$quality = as.factor(wine2$quality)
+names(wine2)[12] <- "good"
+# str(wine)
 train_Y = wine[,12]
 train_X = wine[,-12]
 
@@ -25,45 +27,24 @@ train_X = wine[,-12]
 #Also, report its estimated test error rate.
 set.seed(1234)
 
-k_nearest_neighbor <- c(seq(1, 50, by = 1))
-n <- length(k_nearest_neighbor)
-error_vector_train <- c()
-error_vector_test <- c()
+#FINDING OPTIMAL K IN KNN
+train_control <- trainControl(method="cv", number=10)
+knn.fit <- train(good ~ ., 
+                 method = "knn", 
+                 tuneGrid = expand.grid(k = 2:100), 
+                 trControl  = train_control,
+                 metric = "Accuracy", 
+                 data = wine2)
+results_from_all_k <- data.frame(knn.fit$results)
 
-
-for (K in seq(along = k_nearest_neighbor)) {
-  
-  #creating a 10 fold partition
-  folds <- cut(seq(1,nrow(wine)), breaks = 10, labels = F)
-  
-  for(fold in 1:10) {
-    testindex <- which(folds == fold, arr.ind = T)
-    test = wine[testindex, ]
-    train = wine[-testindex, ]
-    train.X = train[, -12]
-    train.Y = train[, 12]
-    test.X = test[, -12]
-    test.Y = test[, 12]
-    
-    set.seed(1234)
-    model_train <- knn(train.X, train.X, train.Y, k = K)
-    set.seed(1234)
-    model_test <- knn(train = train.X, test = test.X, cl = train.Y, k = K, prob = T)
-    error_vector_train[K] <- mean(model_train != train.Y)
-    error_vector_test[K] <- mean(model_test != test.Y)
-  }
-}
-
-result_from_all_k <- data.frame(k_nearest_neighbor, error_vector_train, error_vector_test)
-result_from_all_k
-
-
+optimal_k_accuracry <- results_from_all_k[results_from_all_k$Accuracy == max(results_from_all_k$Accuracy),]
+optimal_k = optimal_k_accuracry[1] #3
+train_error_knn = 1 -optimal_k_accuracry$Accuracy
 
 #Measures of performance for optimal K in KNN based on the training data. 
-#error rate, 
-
-specificity_vector <- c()
-sensitivity_vector <- c()
+specificity_vector_knn <- c()
+sensitivity_vector_knn <- c()
+test_error_vector_knn <- c()
 auc_vector_knn <- c()
 
 #creating a 10 fold partition
@@ -79,23 +60,22 @@ for(fold in 1:10) {
   test.Y = test[, 12]
   
   set.seed(1234)
-  model_train <- knn(train.X, train.X, train.Y, k = 48)
+  model_train <- knn(train.X, train.X, train.Y, k = optimal_k)
   
-  confusion_matrix = table(model_train, train.Y)
+  confusion_matrix_knn = table(model_train, train.Y)
   #sensitivity 
-  specificity_vector[fold] <- confusion_matrix[2, 2] / (confusion_matrix[1, 2] + confusion_matrix[2, 2])
+  specificity_vector_knn[fold] <- confusion_matrix_knn[2, 2] / (confusion_matrix_knn[1, 2] + confusion_matrix_knn[2, 2])
   #specificity, 
-  sensitivity_vector[fold] <- confusion_matrix[1, 1] / (confusion_matrix[1, 1] + confusion_matrix[2, 1])
+  sensitivity_vector_knn[fold] <- confusion_matrix_knn[1, 1] / (confusion_matrix_knn[1, 1] + confusion_matrix_knn[2, 1])
+  #error
+  test_error_vector_knn[fold] = mean(model_train!=train.Y)
   #and AUC for the optimal KNN 
-  auc_vector_knn[fold] <- auc(roc(model_train, train.Y))[1]
+  auc_vector_knn[fold] <- auc(roc(model_train, train.Y))
 }
 
-specificity_knn = mean(specificity_vector)
-sensitivity_knn = mean(sensitivity_vector)
-train_error_knn <- result_from_all_k[error_vector_test == min(result_from_all_k$error_vector_test), ][2]
-train_error_knn = train_error_knn$error_vector_train[2]
-test_error_knn <- result_from_all_k[error_vector_test == min(result_from_all_k$error_vector_test), ][3]
-test_error_knn = test_error_knn$error_vector_test[2]
+specificity_knn = mean(specificity_vector_knn)
+sensitivity_knn = mean(sensitivity_vector_knn)
+test_error_knn = mean(test_error_vector_knn)
 auc_knn = mean(auc_vector_knn)
 
 knn_list <- c(specificity_knn, sensitivity_knn, train_error_knn, test_error_knn,auc_knn)
@@ -125,6 +105,7 @@ for(fold in 1:10) {
   model_train <- glm(good ~ ., family = binomial, data = train)
   set.seed(1234)
   model_test<- glm(good ~ ., family = binomial, data = test)
+  
   #prediction for glm
   prediction_train <- predict(model_train, train.X, type = "response")
   prediction_glm_train <- ifelse(prediction_train >= 0.5, "1", "0")
@@ -209,9 +190,6 @@ test_error_lda = mean(test_error_vector_lda)
 auc_lda = mean(auc_vector_lda)
 
 lda_list <- c(specificity_lda, sensitivity_lda, train_error_lda, test_error_lda,auc_lda)
-
-
-
 
 # (d) Repeat (a) using QDA.
 set.seed(1234)
