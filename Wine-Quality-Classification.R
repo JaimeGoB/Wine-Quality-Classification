@@ -15,11 +15,13 @@ wine <- read.csv("winequality-white.csv", header = T, sep = ";")
 wine$quality <- ifelse(wine$quality >= 7, 1, 0)
 names(wine)[12] <- "good"
 
+#This is to fit knn
 wine2 <- read.csv("winequality-white.csv", header = T, sep = ";")
 wine2$quality <- ifelse(wine2$quality >= 7, 1, 0)
 wine2$quality = as.factor(wine2$quality)
 names(wine2)[12] <- "good"
-# str(wine)
+
+#Splitting train and test set
 train_Y = wine[,12]
 train_X = wine[,-12]
 
@@ -51,26 +53,26 @@ auc_vector_knn <- c()
 folds <- cut(seq(1,nrow(wine)), breaks = 10, labels = F)
 for(fold in 1:10) {
   
-  testindex <- which(folds == fold, arr.ind = T)
-  test = wine[testindex, ]
-  train = wine[-testindex, ]
-  train.X = train[, -12]
-  train.Y = train[, 12]
-  test.X = test[, -12]
-  test.Y = test[, 12]
+  current_fold <- which(folds == fold, arr.ind = T)
+  test = wine[current_fold, ]
+  train = wine[-current_fold, ]
+  train_X = train[, -12]
+  train_Y = train[, 12]
+  test_X = test[, -12]
+  test_Y = test[, 12]
   
   set.seed(1234)
-  model_train <- knn(train.X, train.X, train.Y, k = optimal_k)
+  model_train <- knn(train_X, train_X, train_Y, k = optimal_k)
   
-  confusion_matrix_knn = table(model_train, train.Y)
+  confusion_matrix_knn = table(model_train, train_Y)
   #sensitivity 
   specificity_vector_knn[fold] <- confusion_matrix_knn[2, 2] / (confusion_matrix_knn[1, 2] + confusion_matrix_knn[2, 2])
   #specificity, 
   sensitivity_vector_knn[fold] <- confusion_matrix_knn[1, 1] / (confusion_matrix_knn[1, 1] + confusion_matrix_knn[2, 1])
   #error
-  test_error_vector_knn[fold] = mean(model_train!=train.Y)
+  test_error_vector_knn[fold] = mean(model_train!=train_Y)
   #and AUC for the optimal KNN 
-  auc_vector_knn[fold] <- auc(roc(model_train, train.Y))
+  auc_vector_knn[fold] <- auc(roc(model_train, train_Y))
 }
 
 specificity_knn = mean(specificity_vector_knn)
@@ -92,13 +94,13 @@ auc_vector_glm <- c()
 folds <- cut(seq(1,nrow(wine)), breaks = 10, labels = F)
 for(fold in 1:10) {
   #setting train and test
-  testindex <- which(folds == fold, arr.ind = T)
-  test = wine[testindex, ]
-  train = wine[-testindex, ]
-  train.X = train[, -12]
-  train.Y = train[, 12]
-  test.X = test[, -12]
-  test.Y = test[, 12]
+  current_fold <- which(folds == fold, arr.ind = T)
+  test = wine[current_fold, ]
+  train = wine[-current_fold, ]
+  train_X = train[, -12]
+  train_Y = train[, 12]
+  test_X = test[, -12]
+  test_Y = test[, 12]
   
   # fitting glm
   set.seed(1234)
@@ -107,26 +109,26 @@ for(fold in 1:10) {
   model_test<- glm(good ~ ., family = binomial, data = test)
   
   #prediction for glm
-  prediction_train <- predict(model_train, train.X, type = "response")
+  prediction_train <- predict(model_train, train_X, type = "response")
   prediction_glm_train <- ifelse(prediction_train >= 0.5, "1", "0")
-  prediction_test <- predict(model_test, test.X, type = "response")
+  prediction_test <- predict(model_test, test_X, type = "response")
   prediction_glm_test <- ifelse(prediction_test >= 0.5, "1", "0")
   
   #confusion matrix
-  confusion_matrix_train = table(prediction_glm_train, train.Y)
-  confusion_matrix_test = table(prediction_glm_test, test.Y)
+  confusion_matrix_train = table(prediction_glm_train, train_Y)
+  confusion_matrix_test = table(prediction_glm_test, test_Y)
   
   #sensitivity
   specificity_vector_glm[fold] <- confusion_matrix_train [2, 2] / (confusion_matrix_train [1, 2] + confusion_matrix_train [2, 2])
   #specificity,
   sensitivity_vector_glm[fold] <- confusion_matrix_train [1, 1] / (confusion_matrix_train [1, 1] + confusion_matrix_train [2, 1])
   # training error 
-  train_error_vector_glm[fold] = mean(prediction_glm_train!=train.Y)
+  train_error_vector_glm[fold] = mean(prediction_glm_train!=train_Y)
   #testing error
-  test_error_vector_glm[fold] = mean(prediction_glm_test!=test.Y)
+  test_error_vector_glm[fold] = mean(prediction_glm_test!=test_Y)
   
   #AUC
-  auc_vector_glm[fold] <- auc(roc(prediction_glm_train, train.Y))[1]
+  auc_vector_glm[fold] <- auc(roc(prediction_glm_train, train_Y))[1]
 }
 
 specificity_glm = mean(specificity_vector_glm)
@@ -149,13 +151,13 @@ auc_vector_lda <- c()
 folds <- cut(seq(1,nrow(wine)), breaks = 10, labels = F)
 for(fold in 1:10) {
   #setting train and test
-  testindex <- which(folds == fold, arr.ind = T)
-  test = wine[testindex, ]
-  train = wine[-testindex, ]
-  train.X = train[, -12]
-  train.Y = train[, 12]
-  test.X = test[, -12]
-  test.Y = test[, 12]
+  current_fold <- which(folds == fold, arr.ind = T)
+  test = wine[current_fold, ]
+  train = wine[-current_fold, ]
+  train_X = train[, -12]
+  train_Y = train[, 12]
+  test_X = test[, -12]
+  test_Y = test[, 12]
   
   # fitting lda
   set.seed(1234)
@@ -163,24 +165,24 @@ for(fold in 1:10) {
   set.seed(1234)
   model_test<- lda(good ~ ., data = test)
   #prediction for lda
-  prediction_lda_train <- predict(model_train, train.X)
-  prediction_lda_test <- predict(model_test, test.X)
+  prediction_lda_train <- predict(model_train, train_X)
+  prediction_lda_test <- predict(model_test, test_X)
 
   #confusion matrix
-  confusion_matrix_train = table(prediction_lda_train$class, train.Y)
-  confusion_matrix_test = table(prediction_lda_test$class, test.Y)
+  confusion_matrix_train = table(prediction_lda_train$class, train_Y)
+  confusion_matrix_test = table(prediction_lda_test$class, test_Y)
   
   #sensitivity
   specificity_vector_lda[fold] <- confusion_matrix_train [2, 2] / (confusion_matrix_train [1, 2] + confusion_matrix_train [2, 2])
   #specificity,
   sensitivity_vector_lda[fold] <- confusion_matrix_train [1, 1] / (confusion_matrix_train [1, 1] + confusion_matrix_train [2, 1])
   # training error 
-  train_error_vector_lda[fold] = mean(prediction_lda_train$class!=train.Y)
+  train_error_vector_lda[fold] = mean(prediction_lda_train$class!=train_Y)
   #testing error
-  test_error_vector_lda[fold] = mean(prediction_lda_test$class!=test.Y)
+  test_error_vector_lda[fold] = mean(prediction_lda_test$class!=test_Y)
   
   #AUC
-  auc_vector_lda[fold] <- auc(roc(prediction_lda_train$class, train.Y))[1]
+  auc_vector_lda[fold] <- auc(roc(prediction_lda_train$class, train_Y))[1]
 }
 
 specificity_lda = mean(specificity_vector_lda)
@@ -203,13 +205,13 @@ auc_vector_qda <- c()
 folds <- cut(seq(1,nrow(wine)), breaks = 10, labels = F)
 for(fold in 1:10) {
   #setting train and test
-  testindex <- which(folds == fold, arr.ind = T)
-  test = wine[testindex, ]
-  train = wine[-testindex, ]
-  train.X = train[, -12]
-  train.Y = train[, 12]
-  test.X = test[, -12]
-  test.Y = test[, 12]
+  current_fold <- which(folds == fold, arr.ind = T)
+  test = wine[current_fold, ]
+  train = wine[-current_fold, ]
+  train_X = train[, -12]
+  train_Y = train[, 12]
+  test_X = test[, -12]
+  test_Y = test[, 12]
   
   # fitting qda
   set.seed(1234)
@@ -217,24 +219,24 @@ for(fold in 1:10) {
   set.seed(1234)
   model_test<- qda(good ~ ., data = test)
   #prediction for qda
-  prediction_qda_train <- predict(model_train, train.X)
-  prediction_qda_test <- predict(model_test, test.X)
+  prediction_qda_train <- predict(model_train, train_X)
+  prediction_qda_test <- predict(model_test, test_X)
   
   #confusion matrix
-  confusion_matrix_train = table(prediction_qda_train$class, train.Y)
-  confusion_matrix_test = table(prediction_qda_test$class, test.Y)
+  confusion_matrix_train = table(prediction_qda_train$class, train_Y)
+  confusion_matrix_test = table(prediction_qda_test$class, test_Y)
   
   #sensitivity
   specificity_vector_qda[fold] <- confusion_matrix_train [2, 2] / (confusion_matrix_train [1, 2] + confusion_matrix_train [2, 2])
   #specificity,
   sensitivity_vector_qda[fold] <- confusion_matrix_train [1, 1] / (confusion_matrix_train [1, 1] + confusion_matrix_train [2, 1])
   # training error 
-  train_error_vector_qda[fold] = mean(prediction_qda_train$class!=train.Y)
+  train_error_vector_qda[fold] = mean(prediction_qda_train$class!=train_Y)
   #testing error
-  test_error_vector_qda[fold] = mean(prediction_qda_test$class!=test.Y)
+  test_error_vector_qda[fold] = mean(prediction_qda_test$class!=test_Y)
   
   #AUC
-  auc_vector_qda[fold] <- auc(roc(prediction_qda_train$class, train.Y))[1]
+  auc_vector_qda[fold] <- auc(roc(prediction_qda_train$class, train_Y))[1]
 }
 
 specificity_qda = mean(specificity_vector_qda)
