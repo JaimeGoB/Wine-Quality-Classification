@@ -90,12 +90,13 @@ sensitivity_knn = mean(sensitivity_vector_knn)
 train_error_knn = mean(train_error_vector_knn)
 test_error_knn = mean(test_error_vector_knn)
 auc_knn = round( mean(auc_vector_knn) , 3)
+auc_knn = round( auc(roc_curve_knn) , 4)
 
 knn_list <- c(specificity_knn, sensitivity_knn, train_error_knn, test_error_knn,auc_knn)
 
 #Plotting ROC curve for knn
 knn_pred_prob <- predict(knn.fit, wine, type = "prob")
-roc_curve_knn <- roc(train_Y, knn_pred_prob[,1])
+roc_curve_knn <- roc(wine$good, knn_pred_prob[,1])
 plot(roc_curve_knn, col = 'black', main = paste("ROC Curve KNN \nAUC ", auc_knn) )
 legend("bottomright",
        legend=c("ROC Curve - KNN"),
@@ -148,7 +149,8 @@ for(fold in 1:10) {
   test_error_vector_glm[fold] = mean(prediction_glm_test!=test_Y)
   
   #AUC
-  auc_vector_glm[fold] <- auc(roc(prediction_glm_train, train_Y))[1]
+  #auc_vector_glm[fold] <- auc(roc(prediction_glm_train, train_Y))[1]
+  auc_vector_glm[fold] <- auc(roc(good ~ prediction_train, data = train))
 }
 
 specificity_glm = mean(specificity_vector_glm)
@@ -165,10 +167,10 @@ logistic_regression_pred <- predict(logistic_regression_fit, type = 'response')
 
 roc_curve_glm <- roc(good ~ logistic_regression_pred, data = wine)
 
-plot(roc_curve_glm, col = 'blue', main=paste("ROC Curve Logistic \nAUC ", auc_glm))
+plot(roc_curve_glm, col = 'green', main=paste("ROC Curve Logistic \nAUC ", auc_glm))
 legend("bottomright",
-       legend=c("ROC Curve - LDA"),
-       col=c("blue"),
+       legend=c("ROC Curve - Logistic"),
+       col=c("green"),
        lty=c(1))
 
 # (c) Repeat (a) using LDA.
@@ -214,7 +216,7 @@ for(fold in 1:10) {
   test_error_vector_lda[fold] = mean(prediction_lda_test$class!=test_Y)
   
   #AUC
-  auc_vector_lda[fold] <- auc(roc(prediction_lda_train$class, train_Y))[1]
+  auc_vector_lda[fold] <- auc(roc(train_Y, prediction_lda_train$posterior[,"1"], levels = c("0", "1")))
 }
 
 specificity_lda = mean(specificity_vector_lda)
@@ -282,7 +284,8 @@ for(fold in 1:10) {
   test_error_vector_qda[fold] = mean(prediction_qda_test$class!=test_Y)
   
   #AUC
-  auc_vector_qda[fold] <- auc(roc(prediction_qda_train$class, train_Y))[1]
+  #auc_vector_qda[fold] <- auc(roc(prediction_qda_train$class, train_Y))[1]
+  auc_vector_qda[fold] <- auc(roc(train_Y, prediction_qda_train$posterior[,"1"], levels = c("0", "1")))
 }
 
 specificity_qda = mean(specificity_vector_qda)
@@ -314,7 +317,7 @@ all_models
 
 
 #Comparing all classifiers
-plot(roc_curve_lda, col = 'blue', main = "ROC Curve Binary Classifcations")
+plot(roc_curve_lda, col = 'blue', xlim = c(1,0), main = "ROC Curve Binary Classifcations")
 lines(roc_curve_qda, col = 'red')
 lines(roc_curve_glm, col = 'green')
 lines(roc_curve_knn, col = 'black')
