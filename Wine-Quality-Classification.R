@@ -1,8 +1,10 @@
 library(class)
 library(cvAUC)
 library(pROC)
+#lda
 library(MASS)
 library(caret)
+
 ################################################
 # 3.  Dichotomize the quality variable as good, which takes the value 1 if quality ≥ 7 and the value 0, otherwise. 
 # We will take good as response and all the 11 physiochemical characteristics of the wines in the data as predictors.
@@ -87,9 +89,18 @@ specificity_knn = mean(specificity_vector_knn)
 sensitivity_knn = mean(sensitivity_vector_knn)
 train_error_knn = mean(train_error_vector_knn)
 test_error_knn = mean(test_error_vector_knn)
-auc_knn = mean(auc_vector_knn)
+auc_knn = round( mean(auc_vector_knn) , 3)
 
 knn_list <- c(specificity_knn, sensitivity_knn, train_error_knn, test_error_knn,auc_knn)
+
+#Plotting ROC curve for knn
+knn_pred_prob <- predict(knn.fit, wine, type = "prob")
+roc_curve_knn <- roc(train_Y, knn_pred_prob[,1])
+plot(roc_curve_knn, col = 'black', main = paste("ROC Curve KNN \nAUC ", auc_knn) )
+legend("bottomright",
+       legend=c("ROC Curve - KNN"),
+       col=c("black"),
+       lty=c(1))
 
 # (b) Repeat (a) using logistic regression.
 set.seed(1234)
@@ -144,9 +155,21 @@ specificity_glm = mean(specificity_vector_glm)
 sensitivity_glm = mean(sensitivity_vector_glm)
 train_error_glm = mean(train_error_vector_glm)
 test_error_glm = mean(test_error_vector_glm)
-auc_glm = mean(auc_vector_glm)
+auc_glm = round( mean(auc_vector_glm) , 3)
 
 glm_list <- c(specificity_glm, sensitivity_glm, train_error_glm, test_error_glm,auc_glm)
+
+#Plotting ROC curve
+logistic_regression_fit <- glm(good ~ ., family = binomial,data = wine)
+logistic_regression_pred <- predict(logistic_regression_fit, type = 'response')
+
+roc_curve_glm <- roc(good ~ logistic_regression_pred, data = wine)
+
+plot(roc_curve_glm, col = 'blue', main=paste("ROC Curve Logistic \nAUC ", auc_glm))
+legend("bottomright",
+       legend=c("ROC Curve - LDA"),
+       col=c("blue"),
+       lty=c(1))
 
 # (c) Repeat (a) using LDA.
 set.seed(1234)
@@ -198,9 +221,20 @@ specificity_lda = mean(specificity_vector_lda)
 sensitivity_lda = mean(sensitivity_vector_lda)
 train_error_lda = mean(train_error_vector_lda)
 test_error_lda = mean(test_error_vector_lda)
-auc_lda = mean(auc_vector_lda)
+auc_lda = round( mean(auc_vector_lda) , 3)
 
 lda_list <- c(specificity_lda, sensitivity_lda, train_error_lda, test_error_lda,auc_lda)
+
+#Plotting ROC curve  model_train 
+lda_fit <- lda(good ~ ., data = wine)
+lda_pred <- predict(lda_fit, train_X)
+roc_curve_lda <- roc(train_Y, lda_pred$posterior[,"1"], levels = c("0", "1"))
+
+plot(roc_curve_lda, col = 'blue', main=paste("ROC Curve LDA \nAUC ", auc_lda))
+legend("bottomright",
+       legend=c("ROC Curve - LDA"),
+       col=c("blue"),
+       lty=c(1))
 
 # (d) Repeat (a) using QDA.
 set.seed(1234)
@@ -209,8 +243,7 @@ test_error_vector_qda <- c()
 specificity_vector_qda <- c()
 sensitivity_vector_qda <- c()
 auc_vector_qda <- c()
-spec2 <- 0
-sens2 <- 0
+
 
 #creating a 10 fold partition
 folds <- cut(seq(1,nrow(wine)), breaks = 10, labels = F)
@@ -239,12 +272,10 @@ for(fold in 1:10) {
   
   #sensitivity
   specificity_vector_qda[fold] <- confusion_matrix_train [2, 2] / (confusion_matrix_train [1, 2] + confusion_matrix_train [2, 2])
-  spec2 <- (c(spec2, specificity_vector_qda[fold]))
-  
+
   #specificity,
   sensitivity_vector_qda[fold] <- confusion_matrix_train [1, 1] / (confusion_matrix_train [1, 1] + confusion_matrix_train [2, 1])
-  sens2 <- (c(sens2, sensitivity_vector_qda[fold]))
-  
+
   # training error 
   train_error_vector_qda[fold] = mean(prediction_qda_train$class!=train_Y)
   #testing error
@@ -253,24 +284,22 @@ for(fold in 1:10) {
   #AUC
   auc_vector_qda[fold] <- auc(roc(prediction_qda_train$class, train_Y))[1]
 }
-spec2
-# sum(spec2) / (length(spec2) -1)
+
 specificity_qda = mean(specificity_vector_qda)
 sensitivity_qda = mean(sensitivity_vector_qda)
 train_error_qda = mean(train_error_vector_qda)
 test_error_qda = mean(test_error_vector_qda)
-auc_qda = mean(auc_vector_qda)
+auc_qda = round( mean(auc_vector_qda) ,3)
 
 qda_list <- c(specificity_qda, sensitivity_qda, train_error_qda, test_error_qda,auc_qda)
 
-#ROC curve
-qda_fit <- qda(good ~ ., data = train)
+#Plotting ROC curve
+qda_fit <- qda(good ~ ., data = wine)
 qda_pred <- predict(qda_fit, train_X)
 
 roc_curve_qda <- roc(train_Y, qda_pred$posterior[,"1"], levels = c("0", "1"))
-AUC_qda = round(auc(roc(qda_pred$class, train_Y))[1],3)
 
-plot(roc_curve_qda, col = 'red', main=paste("ROC Curve QDA \nAUC ", AUC_qda))
+plot(roc_curve_qda, col = 'red', main=paste("ROC Curve QDA \nAUC ", auc_qda))
 legend("bottomright",
        legend=c("ROC Curve - QDA"),
        col=c("red"),
@@ -284,4 +313,13 @@ rownames(all_models) <- c("knn","logistic","lda", "qda")
 all_models
 
 
+#Comparing all classifiers
+plot(roc_curve_lda, col = 'blue', main = "ROC Curve Binary Classifcations")
+lines(roc_curve_qda, col = 'red')
+lines(roc_curve_glm, col = 'green')
+lines(roc_curve_knn, col = 'black')
+legend("bottomright",
+       legend=c("Linear Discriminant Analysis\nAUC ", "Quadratic Discriminant Analysis", "Logistic Regression", "KNN"),
+       col=c("blue", "red", "green", "black"),
+       lty=c(1))
 
