@@ -40,12 +40,14 @@ knn.fit <- train(good ~ .,
 results_from_all_k <- data.frame(knn.fit$results)
 
 optimal_k_accuracry <- results_from_all_k[results_from_all_k$Accuracy == max(results_from_all_k$Accuracy),]
+optimal_k_accuracry
 optimal_k = optimal_k_accuracry[1] #3
-train_error_knn = 1 -optimal_k_accuracry$Accuracy
+optimal_k
 
 #Measures of performance for optimal K in KNN based on the training data. 
 specificity_vector_knn <- c()
 sensitivity_vector_knn <- c()
+train_error_vector_knn <- c()
 test_error_vector_knn <- c()
 auc_vector_knn <- c()
 
@@ -63,20 +65,27 @@ for(fold in 1:10) {
   
   set.seed(1234)
   model_train <- knn(train_X, train_X, train_Y, k = optimal_k)
+  set.seed(1234)
+  model_test <- knn(train_X, test_X, train_Y, k = optimal_k)
   
   confusion_matrix_knn = table(model_train, train_Y)
+  confusion_matrix_knn_test = table(model_test, test_Y)
+  
   #sensitivity 
   specificity_vector_knn[fold] <- confusion_matrix_knn[2, 2] / (confusion_matrix_knn[1, 2] + confusion_matrix_knn[2, 2])
   #specificity, 
   sensitivity_vector_knn[fold] <- confusion_matrix_knn[1, 1] / (confusion_matrix_knn[1, 1] + confusion_matrix_knn[2, 1])
-  #error
-  test_error_vector_knn[fold] = mean(model_train!=train_Y)
+  #train error
+  train_error_vector_knn[fold] = mean(model_train!=train_Y)
+  #train error
+  test_error_vector_knn[fold] = mean(model_test!=test_Y)
   #and AUC for the optimal KNN 
   auc_vector_knn[fold] <- auc(roc(model_train, train_Y))
 }
 
 specificity_knn = mean(specificity_vector_knn)
 sensitivity_knn = mean(sensitivity_vector_knn)
+train_error_knn = mean(train_error_vector_knn)
 test_error_knn = mean(test_error_vector_knn)
 auc_knn = mean(auc_vector_knn)
 
@@ -200,6 +209,8 @@ test_error_vector_qda <- c()
 specificity_vector_qda <- c()
 sensitivity_vector_qda <- c()
 auc_vector_qda <- c()
+spec2 <- 0
+sens2 <- 0
 
 #creating a 10 fold partition
 folds <- cut(seq(1,nrow(wine)), breaks = 10, labels = F)
@@ -228,8 +239,12 @@ for(fold in 1:10) {
   
   #sensitivity
   specificity_vector_qda[fold] <- confusion_matrix_train [2, 2] / (confusion_matrix_train [1, 2] + confusion_matrix_train [2, 2])
+  spec2 <- (c(spec2, specificity_vector_qda[fold]))
+  
   #specificity,
   sensitivity_vector_qda[fold] <- confusion_matrix_train [1, 1] / (confusion_matrix_train [1, 1] + confusion_matrix_train [2, 1])
+  sens2 <- (c(sens2, sensitivity_vector_qda[fold]))
+  
   # training error 
   train_error_vector_qda[fold] = mean(prediction_qda_train$class!=train_Y)
   #testing error
@@ -238,7 +253,8 @@ for(fold in 1:10) {
   #AUC
   auc_vector_qda[fold] <- auc(roc(prediction_qda_train$class, train_Y))[1]
 }
-
+spec2
+# sum(spec2) / (length(spec2) -1)
 specificity_qda = mean(specificity_vector_qda)
 sensitivity_qda = mean(sensitivity_vector_qda)
 train_error_qda = mean(train_error_vector_qda)
@@ -246,6 +262,19 @@ test_error_qda = mean(test_error_vector_qda)
 auc_qda = mean(auc_vector_qda)
 
 qda_list <- c(specificity_qda, sensitivity_qda, train_error_qda, test_error_qda,auc_qda)
+
+#ROC curve
+qda_fit <- qda(good ~ ., data = train)
+qda_pred <- predict(qda_fit, train_X)
+
+roc_curve_qda <- roc(train_Y, qda_pred$posterior[,"1"], levels = c("0", "1"))
+AUC_qda = round(auc(roc(qda_pred$class, train_Y))[1],3)
+
+plot(roc_curve_qda, col = 'red', main=paste("ROC Curve QDA \nAUC ", AUC_qda))
+legend("bottomright",
+       legend=c("ROC Curve - QDA"),
+       col=c("red"),
+       lty=c(1))
 
 # (e) Compare the results in (a)-(d). Which classifier would you recommend? Justify your answer.
 
