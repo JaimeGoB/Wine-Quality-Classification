@@ -41,7 +41,7 @@ Another meausure was to plot the area under the curve(AUC) for each classifier. 
 
 <img src="https://github.com/JaimeGoB/Wine-Quality-Classification/blob/main/plots/qda.png" width="600" height="300" />
 
-## Results
+# Results
 
 
 <img src="https://github.com/JaimeGoB/Wine-Quality-Classification/blob/main/plots/results.png" />
