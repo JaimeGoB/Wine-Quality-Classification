@@ -23,13 +23,13 @@ Below is a diagram of how the dataset was partitioned and error was calculated:
 
 Another meausure was to plot the area under the curve(AUC) for each classifier. This can be done by ploting the specificity and sensititivy. We want a plot that "elbows" top right corner and has a AUC closer to 1.
 
-### ROC KNN
+### AUC PLOT KNN
 
-### ROC Logistic Regression
+### AUC PLOT Logistic Regression
 
-### ROC LDA
+### AUC PLOT LDA
 
-### ROC QDA
+### AUC PLOT QDA
 
 ## Results
 
