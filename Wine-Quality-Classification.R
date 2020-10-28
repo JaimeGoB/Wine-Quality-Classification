@@ -51,7 +51,6 @@ specificity_vector_knn <- c()
 sensitivity_vector_knn <- c()
 train_error_vector_knn <- c()
 test_error_vector_knn <- c()
-auc_vector_knn <- c()
 
 #creating a 10 fold partition
 folds <- cut(seq(1,nrow(wine)), breaks = 10, labels = F)
@@ -81,27 +80,32 @@ for(fold in 1:10) {
   train_error_vector_knn[fold] = mean(model_train!=train_Y)
   #train error
   test_error_vector_knn[fold] = mean(model_test!=test_Y)
-  #and AUC for the optimal KNN 
-  auc_vector_knn[fold] <- auc(roc(model_train, train_Y))
 }
 
 specificity_knn = mean(specificity_vector_knn)
 sensitivity_knn = mean(sensitivity_vector_knn)
 train_error_knn = mean(train_error_vector_knn)
 test_error_knn = mean(test_error_vector_knn)
-auc_knn = round( mean(auc_vector_knn) , 3)
-auc_knn = round( auc(roc_curve_knn) , 4)
 
-knn_list <- c(specificity_knn, sensitivity_knn, train_error_knn, test_error_knn,auc_knn)
-
-#Plotting ROC curve for knn
+#### Plotting ROC curve for knn #####
+#predicting from out fitted knn, target is good from wine
 knn_pred_prob <- predict(knn.fit, wine, type = "prob")
-roc_curve_knn <- roc(wine$good, knn_pred_prob[,1])
+#we get a set a probabilities: [,1] is for 0 and [,2] is for 1
+prediction_knn <- ifelse(knn_pred_prob[,2]  >= 0.5, 1, 0)
+#getting roc from predictions on target
+roc_curve_knn <- roc(wine$good, prediction_knn)
+#storing auc from roc
+auc_knn <- round(auc(roc_curve_knn), 4)
+
+#Plotting AUC for KNN
 plot(roc_curve_knn, col = 'black', main = paste("ROC Curve KNN \nAUC ", auc_knn) )
 legend("bottomright",
        legend=c("ROC Curve - KNN"),
        col=c("black"),
        lty=c(1))
+
+#Creating a list for KNN model evaluations
+knn_list <- c(specificity_knn, sensitivity_knn, train_error_knn, test_error_knn,auc_knn)
 
 # (b) Repeat (a) using logistic regression.
 set.seed(1234)
