@@ -25,19 +25,19 @@ Below is a diagram of how the dataset was partitioned and error was calculated:
 
 Another meausure was to plot the area under the curve(AUC) for each classifier. This can be done by ploting the specificity and sensititivy. We want a plot that "elbows" top right corner and has a AUC closer to 1.
 
-### AUC PLOT KNN
+#### AUC PLOT KNN
 
 <img src="https://github.com/JaimeGoB/Wine-Quality-Classification/blob/main/plots/knn.png" width="600" height="300" />
 
-### AUC PLOT Logistic Regression
+#### AUC PLOT Logistic Regression
 
 <img src="https://github.com/JaimeGoB/Wine-Quality-Classification/blob/main/plots/logistic.png" width="600" height="300" />
 
-### AUC PLOT LDA
+#### AUC PLOT LDA
 
 <img src="https://github.com/JaimeGoB/Wine-Quality-Classification/blob/main/plots/lda.png" width="600" height="300" />
 
-### AUC PLOT QDA
+#### AUC PLOT QDA
 
 <img src="https://github.com/JaimeGoB/Wine-Quality-Classification/blob/main/plots/qda.png" width="600" height="300" />
 
